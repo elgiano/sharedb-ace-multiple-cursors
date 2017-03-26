@@ -1,14 +1,16 @@
 import sharedbAce from "sharedb-ace";
-import SharedbAceRWControl from "sharedb-ace-rw-control/client.js";
+//import SharedbAceRWControl from "sharedb-ace-rw-control/client.js";
+// my edits
+import SharedbAceMultipleCursors from "sharedb-ace-multiple-cursors/client.js";
 
 const editor = ace.edit("editor"); 
-editor.setTheme("ace/theme/twilight");
+//editor.setTheme("ace/theme/twilight");
 const session = editor.getSession();
 session.setMode("ace/mode/javascript");
 session.setNewLineMode("unix");
 
 const editor2 = ace.edit("editor2"); 
-editor2.setTheme("ace/theme/twilight");
+//editor2.setTheme("ace/theme/twilight");
 const session2 = editor2.getSession();
 session2.setMode("ace/mode/javascript");
 session2.setNewLineMode("unix"); 
@@ -31,7 +33,8 @@ get("http://localhost:3000/gists/latest", function(data) {
     namespace: "codepad",
   });
   ShareAce.on('ready', function() {
-    ShareAce.add(editor, ["code"], [ SharedbAceRWControl ]);
+    //ShareAce.add(editor, ["code"], [ SharedbAceRWControl, SharedbAceMultipleCursors]);
+    ShareAce.add(editor, ["code"], [SharedbAceMultipleCursors]);
     ShareAce.add(editor2, ["testcases"], []); 
   });
 })
