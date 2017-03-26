@@ -2,7 +2,6 @@
   "name": "sharedb-ace-multiple-cursors",
   "version": "1.0.0",
   "description": "Display corsors of other users",
-  "main": "index.js",
   "scripts": {
     "bundle": "webpack",
     "dev": "webpack --watch"
@@ -10,7 +9,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "ace": "^1.3.0",
     "babel-cli": "^6.24.0",
     "babel-loader": "^6.4.1",
     "redis": "^2.7.1"
