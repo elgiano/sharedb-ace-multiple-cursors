@@ -1,39 +1,38 @@
-//import redis from 'redis';
-redis = require('redis');
+// import redis from 'redis';
+const redis = require('redis');
 const DB_NAME = 'userCursors';
 
-module.exports = function subscribe(redisUrl) {
-  console.log('inside multiple-cursors subscribe');
-  return (ctx) => {
-    const rc = redis.createClient(redisUrl);
+function setDBFactory(redisUrl) {
+  return (userName, cursor) => {
+    const rc = redis.createClient(redisUrl); 
+    rc.hset([DB_NAME, userName, JSON.stringify(cursor)], (err, reply) => {
+      if (err) throw err;
+      rc.quit();
+    });
+  };
+}
 
-    console.log('inside return body of multiple-cursors subscribe');
+function removeFromDBFactory(redisUrl) {
+  return (userName) => {
+    const rc = redis.createClient(redisUrl); 
+    rc.del([DB_NAME, userName], (err, reply) => {
+      if (err) throw err;
+      rc.quit();
+    });
+  };
+}
+
+module.exports = function subscribe(redisUrl) {
+  return (ctx) => {
+    const setDB = setDBFactory(redisUrl);
+    const removeFromDB = removeFromDBFactory(redisUrl);
     
     const pub = redis.createClient(redisUrl);
     const sub = redis.createClient(redisUrl);
 
-
     sub.on('message', (channel, message) => {
-      if(channel == 'multiple-cursors') {
-        try {
-          message = JSON.parse(message);
-        } catch(e) {
-          return;
-        }
-
-        switch (message.id) {
-          case 'newUser':
-            ctx.websocket.send(JSON.stringify(message));
-            break;
-
-          case 'cursorChange':
-            ctx.websocket.send(JSON.stringify(message));
-            break;
-
-          case 'removeUser'
-            ctx.websocket.send(JSON.stringify(message));
-          default:
-        }
+      if(channel === 'multiple-cursors') {
+        ctx.websocket.send(message); 
       }
     });
 
@@ -44,37 +43,46 @@ module.exports = function subscribe(redisUrl) {
       try {
         message = JSON.parse(message);
       } catch(e) {
-        // meh
+        console.warn(`unable to parse message: ${message}`);
+        return;
       }
 
-      if('id' in message && message.id === 'initUser') {
+      console.log(message);
+
+      switch(message.id) {
+      case 'initUser':
         userName = message.userName;
         cursor = message.cursor;
 
-        // push data to redis
-        rc.hset([DB_NAME, userName, JSON.stringify(cursor)], redis.print);
-
-        pubMessage = {id : 'newUser', userName : userName}
+        setDB(userName, cursor);
+        pubMessage = {id : 'newUser', userName : userName};
         pub.publish('multiple-cursors', JSON.stringify(pubMessage));
-      } else if('id' in message && message.id == 'cursorChange') {
+        break;
+      case 'cursorChange':
         userName = message.userName;
         cursor = message.cursor;
-
-        console.log(cursor);
-
-        rc.hset([DB_NAME, userName, JSON.stringify(cursor)], redis.print);
-
+        setDB(userName, cursor);
+        
         pubMessage = {id: 'cursorChange', userName : userName, cursor : cursor};
         pub.publish('multiple-cursors', JSON.stringify(pubMessage));
-      } else if('id' in message && message.id == 'removeUser') {
+        break;
+      case 'removeUser':
         userName = message.userName;
-        rc.del([DB_NAME, userName], redis.print);
+        removeFromDB(userName);
 
-        pubMessage = {id: 'removeUser', userName : userName}
+        pubMessage = {id: 'removeUser', userName : userName};
         pub.publish('multiple-cursors', JSON.stringify(pubMessage));
+        break;
+      default:
+        console.warn(`unhandled message: ${message}`);
       }
-    })
-  }
-
-
-}
+    });
+    
+    ctx.websocket.on('close', (event) => {
+      sub.unsubscribe();
+      sub.quit();
+      pub.quit();
+    });
+  };
+  
+};
