@@ -1,6 +1,11 @@
 const marker = {};
 marker.cursors = {}; // username -> {color, cursors}
 
+marker.init = function (ace) {
+  marker.session = ace.session;
+  marker.session.addDynamicMarker(marker, true);
+};
+
 marker.update = function (html, markerLayer, session, config) {
   const start = config.firstRow;
   const end = config.lastRow;
@@ -37,11 +42,6 @@ marker.update = function (html, markerLayer, session, config) {
 };
 marker.redraw = function () {
   this.session._signal('changeFrontMarker');
-};
-
-marker.init = function (ace) {
-  marker.session = ace.session;
-  marker.session.addDynamicMarker(marker, true);
 };
 
 export default marker;
