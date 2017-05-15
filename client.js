@@ -58,10 +58,9 @@ function SharedbMultipleCursors(socket, ace) {
         if (message.userName in marker.cursors) {
           delete marker.cursors[message.userName];
         }
-        break;
-      default:
+      break;
+    default:
     }
   });
 }
-module.exports = SharedbMultipleCursors;
-// export SharedbMultipleCursors;
+export default SharedbMultipleCursors;
