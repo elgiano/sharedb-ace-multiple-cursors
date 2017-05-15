@@ -1,7 +1,7 @@
 {
   "name": "sharedb-ace-multiple-cursors",
   "version": "1.0.0",
-  "description": "Display corsors of other users",
+  "description": "Display cursors of other users",
   "scripts": {
     "bundle": "webpack",
     "dev": "webpack --watch"

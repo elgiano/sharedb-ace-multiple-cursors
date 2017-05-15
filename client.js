@@ -5,6 +5,7 @@ const colors = ['BurlyWood', 'PowderBlue', 'Violet', 'GreenYellow',
 const MAX_COLORS = 10;
 
 function SharedbMultipleCursors(socket, ace) {
+  console.log("starting mulitple cursors");
   const MAX_USERS = 50;
 
   const username = `user${Math.floor(Math.random() * MAX_USERS)}`;
@@ -63,3 +64,4 @@ function SharedbMultipleCursors(socket, ace) {
   });
 }
 module.exports = SharedbMultipleCursors;
+// export SharedbMultipleCursors;
