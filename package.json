@@ -1,10 +1,16 @@
 {
   "name": "sharedb-ace-multiple-cursors",
-  "version": "1.0.0",
-  "description": "Display cursors of other users",
+  "version": "1.0.1",
+  "description": "Display corsors of other users",
+  "files": [
+    "distribution"
+  ],
   "scripts": {
-    "bundle": "webpack",
-    "dev": "webpack --watch"
+    "build": "npm run build:npm",
+    "build:npm": "babel source --presets babel-preset-latest --out-dir distribution",
+    "build:dist": "webpack",
+    "build:watch": "webpack --watch",
+    "prepublish": "npm run build"
   },
   "author": "",
   "license": "ISC",
@@ -14,6 +20,7 @@
     "redis": "^2.7.1"
   },
   "devDependencies": {
+    "babel-preset-latest": "^6.24.1",
     "webpack": "^2.3.0"
   }
 }
