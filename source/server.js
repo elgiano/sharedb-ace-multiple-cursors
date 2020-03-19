@@ -1,46 +1,17 @@
-// import redis from 'redis';
-const redis = require('redis');
+import PubSub from 'pubsub-js';
 
-const DB_NAME = 'userCursors';
+const CH = 'multiple-cursors';
 
-function setDBFactory(redisUrl) {
-  return (userName, cursor) => {
-    const rc = redis.createClient(redisUrl);
-    rc.hset([DB_NAME, userName, JSON.stringify(cursor)], (err) => {
-      if (err) throw err;
-      rc.quit();
-    });
-  };
-}
+module.exports = function subscribe(websocket,db) {
 
-function removeFromDBFactory(redisUrl) {
-  return (userName) => {
-    const rc = redis.createClient(redisUrl);
-    rc.del([DB_NAME, userName], (err) => {
-      if (err) throw err;
-      rc.quit();
-    });
-  };
-}
-
-module.exports = function subscribe(redisUrl) {
-  return (ctx) => {
-    const setDB = setDBFactory(redisUrl);
-    const removeFromDB = removeFromDBFactory(redisUrl);
-
-    const pub = redis.createClient(redisUrl);
-    const sub = redis.createClient(redisUrl);
-
-    sub.on('message', (channel, message) => {
-      if (channel === 'multiple-cursors') {
-        ctx.websocket.send(message);
-      }
-    });
-
-    sub.subscribe('multiple-cursors');
+    const sub = PubSub.subscribe(CH,(ch,msg)=>{
+      console.log("local",msg);
+      websocket.send(msg);
+    })
 
     // listen to socket messages from client
-    ctx.websocket.on('message', (msg) => {
+    websocket.on('message', (msg) => {
+
       let message = null;
       try {
         message = JSON.parse(msg);
@@ -49,29 +20,32 @@ module.exports = function subscribe(redisUrl) {
         return;
       }
 
-      // console.log(message);
       let pubMessage = null;
       const userName = message.userName;
       const cursor = message.cursor;
       switch (message.id) {
         case 'initUser': {
-          setDB(userName, cursor);
+          db[userName] = msg.cursor;
           pubMessage = { id: 'newUser', userName };
-          pub.publish('multiple-cursors', JSON.stringify(pubMessage));
+          pubMessage = JSON.stringify(pubMessage);
+          //console.log("remote",pubMessage);
+          PubSub.publish(CH, JSON.stringify(pubMessage));
           break;
         }
         case 'cursorChange': {
-          setDB(userName, cursor);
-
+          db[userName] = cursor;
           pubMessage = { id: 'cursorChange', userName, cursor };
-          pub.publish('multiple-cursors', JSON.stringify(pubMessage));
+          pubMessage = JSON.stringify(pubMessage);
+          //console.log("remote",pubMessage);
+          PubSub.publish(CH, JSON.stringify(pubMessage));
           break;
         }
         case 'removeUser': {
-          removeFromDB(userName);
-
+          delete db[userName];
           pubMessage = { id: 'removeUser', userName };
-          pub.publish('multiple-cursors', JSON.stringify(pubMessage));
+          pubMessage = JSON.stringify(pubMessage);
+          //console.log("remote",pubMessage);
+          PubSub.publish(CH, JSON.stringify(pubMessage));
           break;
         }
         default:
@@ -79,10 +53,8 @@ module.exports = function subscribe(redisUrl) {
       }
     });
 
-    ctx.websocket.on('close', () => {
-      sub.unsubscribe();
-      sub.quit();
-      pub.quit();
+    websocket.on('close', () => {
+      PubSub.unsubscribe(sub)
     });
-  };
+
 };

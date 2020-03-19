@@ -1,7 +1,7 @@
 {
   "name": "sharedb-ace-multiple-cursors",
-  "version": "1.0.1",
-  "description": "Display corsors of other users",
+  "version": "1.0.2",
+  "description": "Display cursors of other users",
   "files": [
     "distribution"
   ],
@@ -17,7 +17,7 @@
   "dependencies": {
     "babel-cli": "^6.24.0",
     "babel-loader": "^6.4.1",
-    "redis": "^2.7.1"
+    "pubsub-js": "^1.8.0"
   },
   "devDependencies": {
     "babel-preset-latest": "^6.24.1",

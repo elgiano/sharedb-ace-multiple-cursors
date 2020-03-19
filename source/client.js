@@ -1,4 +1,4 @@
-import marker from './marker';
+import marker from '../marker';
 
 const colors = ['BurlyWood', 'PowderBlue', 'Violet', 'GreenYellow',
   'Red', 'LimeGreen', 'DarkViolet', 'GhostWhite', 'OrangeRed', 'HotPink'];
@@ -12,14 +12,14 @@ function SharedbMultipleCursors(socket, ace) {
   marker.init(ace);
 
   // Initialize User
-  socket.addEventListener('open', () => {
+  socket.onopen = () => {
     const message = {
       id: 'initUser',
       userName: username,
       cursor: ace.getCursorPosition(),
     };
     socket.send(JSON.stringify(message));
-  });
+  };
 
   // listen for local cursor changes
   ace.selection.on('changeCursor', () => {
@@ -28,17 +28,19 @@ function SharedbMultipleCursors(socket, ace) {
       userName: username,
       cursor: ace.getCursorPosition(),
     };
-
     socket.send(JSON.stringify(message));
   });
 
-  socket.addEventListener('message', (msg) => {
+  socket.onmessage = (msg) => {
+
     let message = null;
     try {
       message = JSON.parse(msg.data);
     } catch (e) {
       return;
     }
+    console.log("received changing cursors", message)
+
 
     switch (message.id) {
       case 'cursorChange':
@@ -61,6 +63,6 @@ function SharedbMultipleCursors(socket, ace) {
       break;
     default:
     }
-  });
+  };
 }
 export default SharedbMultipleCursors;
