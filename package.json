@@ -10,7 +10,8 @@
     "build:npm": "babel source --presets babel-preset-latest --out-dir distribution",
     "build:dist": "webpack",
     "build:watch": "webpack --watch",
-    "prepublish": "npm run build"
+    "prepublish": "npm run build",
+    "postinstall": "npm run build"
   },
   "author": "",
   "license": "ISC",
