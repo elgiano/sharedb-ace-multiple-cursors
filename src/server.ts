@@ -2,34 +2,44 @@ import PubSub from 'pubsub-js';
 
 const CH = 'multiple-cursors';
 
-module.exports = function subscribe(websocket,db) {
+function removeUser(userName:string, db:any){
+  delete db[userName];
+  let pubMessage = { id: 'removeUser', userName };
+  let message = JSON.stringify(pubMessage);
+  //console.log("remote",pubMessage);
+  PubSub.publish(CH, message);
+}
 
-    const sub = PubSub.subscribe(CH,(ch,msg)=>{
-      console.log("local",msg);
+export function subscribe(websocket:WebSocket,db:any) {
+
+    const sub = PubSub.subscribe(CH,(_:string,msg:string)=>{
+      //console.log("local",msg);
       websocket.send(msg);
     })
 
+    let userName:string;
+
     // listen to socket messages from client
-    websocket.on('message', (msg) => {
+    websocket.onmessage = (msg) => {
 
       let message = null;
       try {
-        message = JSON.parse(msg);
+        message = JSON.parse(msg.data);
       } catch (e) {
         // console.warn(`unable to parse message: ${message}`);
         return;
       }
 
       let pubMessage = null;
-      const userName = message.userName;
+      userName = message.userName;
       const cursor = message.cursor;
       switch (message.id) {
         case 'initUser': {
-          db[userName] = msg.cursor;
+          db[userName] = message.cursor;
           pubMessage = { id: 'newUser', userName };
           pubMessage = JSON.stringify(pubMessage);
           //console.log("remote",pubMessage);
-          PubSub.publish(CH, JSON.stringify(pubMessage));
+          PubSub.publish(CH, pubMessage);
           break;
         }
         case 'cursorChange': {
@@ -37,24 +47,21 @@ module.exports = function subscribe(websocket,db) {
           pubMessage = { id: 'cursorChange', userName, cursor };
           pubMessage = JSON.stringify(pubMessage);
           //console.log("remote",pubMessage);
-          PubSub.publish(CH, JSON.stringify(pubMessage));
+          PubSub.publish(CH, pubMessage);
           break;
         }
         case 'removeUser': {
-          delete db[userName];
-          pubMessage = { id: 'removeUser', userName };
-          pubMessage = JSON.stringify(pubMessage);
-          //console.log("remote",pubMessage);
-          PubSub.publish(CH, JSON.stringify(pubMessage));
+          removeUser(userName,db);
           break;
         }
         default:
           // console.warn(`unhandled message: ${message}`);
       }
-    });
+    };
 
-    websocket.on('close', () => {
+    websocket.onclose = () => {
       PubSub.unsubscribe(sub)
-    });
+      if(userName) removeUser(userName, db)
+    };
 
 };
