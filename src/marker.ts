@@ -1,6 +1,18 @@
 // username -> {color, cursors}
+const colors = [
+  'BurlyWood', 'PowderBlue', 'Violet', 'GreenYellow',
+  'Red', 'LimeGreen', 'DarkViolet', 'GhostWhite',
+  'OrangeRed', 'HotPink'
+];
+
+const MAX_COLORS = 10;
+
+export interface Cursor{
+  row: number, column: number
+}
+
 export interface MarkerCursor{
-  [username:string]:{color:string, cursor:any}
+  [username:string]:{color:string, cursor?:Cursor, selection?: any}
 }
 
 export class Marker{
@@ -51,4 +63,33 @@ export class Marker{
   redraw() {
     this.session._signal('changeFrontMarker');
   };
+
+  addUser(userName:string, data: Partial<MarkerCursor>){
+    this.cursors[userName] = {
+      ...data,
+      color: colors[Math.floor(Math.random() * MAX_COLORS)],
+    };
+    this.redraw();
+  }
+
+  removeUser(userName:string){
+    if (!(userName in this.cursors)) return
+
+    delete this.cursors[userName];
+    this.redraw()
+  }
+
+  updateCursor(userName:string, cursor:Cursor){
+    this.cursors[userName] = Object.assign(
+      {}, this.cursors[userName], {cursor}
+    )
+    this.redraw();
+  }
+
+  updateSelection(userName:string, selection){
+    this.cursors[userName] = Object.assign(
+      {}, this.cursors[userName], {selection}
+    )
+    this.redraw();
+  }
 }

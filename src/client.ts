@@ -1,24 +1,30 @@
-import {Marker} from './marker';
+import {AceMultiCursorManager, AceMultiSelectionManager} from '@convergencelabs/ace-collab-ext'
+import {Range} from 'ace-builds'
+import * as stringToColor from 'string-to-color'
 
-const colors = ['BurlyWood', 'PowderBlue', 'Violet', 'GreenYellow',
-  'Red', 'LimeGreen', 'DarkViolet', 'GhostWhite', 'OrangeRed', 'HotPink'];
-const MAX_COLORS = 10;
+const colors = [
+  'BurlyWood', 'PowderBlue', 'Violet', 'GreenYellow',
+  'Red', 'LimeGreen', 'DarkViolet', 'GhostWhite',
+  'OrangeRed', 'HotPink'
+];
 const MAX_USERS = 50;
 
 
 export class SharedbAceMultipleCursorsClient {
 
-  marker: Marker;
+  multiCursor: AceMultiCursorManager
+  multiSelection: AceMultiSelectionManager
 
-  constructor(socket:WebSocket, ace:any){
+
+  constructor(socket:WebSocket, ace:any, userName:string){
     //console.log("starting mulitple cursors");
-    const username = `user${Math.floor(Math.random() * MAX_USERS)}`;
-    this.marker = new Marker(ace);
-
+    const username = userName || `user${Math.floor(Math.random() * MAX_USERS)}`;
+    this.multiCursor = new AceMultiCursorManager(ace.session)
+    this.multiSelection = new AceMultiSelectionManager(ace.session)
     // Initialize User
     socket.onopen = () => {
       const message = {
-        id: 'initUser',
+        id: 'newUser',
         userName: username,
         cursor: ace.getCursorPosition(),
       };
@@ -35,6 +41,15 @@ export class SharedbAceMultipleCursorsClient {
       socket.send(JSON.stringify(message));
     });
 
+    ace.selection.on('changeSelection', () => {
+      const message = {
+        id: 'selectionChange',
+        userName: username,
+        selection: ace.getSelectionRange(),
+      };
+      socket.send(JSON.stringify(message));
+    });
+
     socket.onmessage = (msg) => {
 
       let message = null;
@@ -43,32 +58,55 @@ export class SharedbAceMultipleCursorsClient {
       } catch (e) {
         return;
       }
-      //console.log("received changing cursors", message)
+      if (message.userName === username) return
+      console.log("received changing cursors", message)
+
+      const {userName, selection, cursor} = message;
 
       switch (message.id) {
+        case 'newUser':
+          this.addUser(userName,cursor,selection)
+          break;
         case 'cursorChange':
-          if (message.userName === username) break;
-
-          if (!(message.userName in this.marker.cursors)) {
-            this.marker.cursors[message.userName] = {
-              cursor: message.cursor,
-              color: colors[Math.floor(Math.random() * MAX_COLORS)],
-            };
-          } else {
-            this.marker.cursors[message.userName].cursor = message.cursor;
-          }
-          this.marker.redraw();
+          this.update(userName, {cursor});
+          break;
+        case 'selectionChange':
+          const sel = this.getRange(selection);
+          console.log("sel",sel);
+          this.update(userName, {selection});
           break;
         case 'removeUser':
-          if (message.userName in this.marker.cursors) {
-            delete this.marker.cursors[message.userName];
-            this.marker.redraw()
-          }
-        break;
-      default:
+          this.multiCursor.removeCursor(userName);
+          this.multiSelection.removeSelection(userName);
+          break;
       }
     };
   }
 
+  addUser(userName, cursor:any, selection:any){
+    try{
+      const color = this.getColor(userName);
+      if(cursor) this.multiCursor.addCursor(userName, userName, color, cursor);
+      if(selection) this.multiSelection.addSelection(userName, userName, color, [this.getRange(selection)]);
+    }catch(e){console.warn(e)}
+  }
 
+  update(userName:string, {cursor=null,selection=null}){
+    try{
+      if(cursor) this.multiCursor.setCursor(userName, cursor);
+      if(selection) this.multiSelection.setSelection(userName, [this.getRange(selection)]);
+    }catch(e){
+      this.addUser(userName, cursor, selection);
+      if(cursor) this.multiCursor.setCursor(userName, cursor);
+      if(selection) this.multiSelection.setSelection(userName, [this.getRange(selection)]);
+    }
+  }
+
+  getColor(userName:string):string{
+    return stringToColor(userName)//colors[Math.floor(Math.random() * colors.length)]
+  }
+
+  getRange(selection:any){
+    return new Range(selection.start.row,selection.start.column,selection.end.row,selection.end.column)
+  }
 }

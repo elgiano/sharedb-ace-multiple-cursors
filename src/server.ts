@@ -2,6 +2,20 @@ import PubSub from 'pubsub-js';
 
 const CH = 'multiple-cursors';
 
+const messageTypes = [
+  'newUser',
+  'cursorChange',
+  'selectionChange',
+  'removeUser'
+]
+
+function registerChange(id:string, userName:string, db: any, change:any){
+  db[userName] = Object.assign({},db[userName],change)
+  const pubMessage = JSON.stringify({ userName, id , ...db[userName] });
+  //console.log("remote",pubMessage);
+  PubSub.publish(CH, pubMessage);
+}
+
 function removeUser(userName:string, db:any){
   delete db[userName];
   let pubMessage = { id: 'removeUser', userName };
@@ -30,31 +44,15 @@ export function subscribe(websocket:WebSocket,db:any) {
         return;
       }
 
-      let pubMessage = null;
       userName = message.userName;
-      const cursor = message.cursor;
-      switch (message.id) {
-        case 'initUser': {
-          db[userName] = message.cursor;
-          pubMessage = { id: 'newUser', userName };
-          pubMessage = JSON.stringify(pubMessage);
-          //console.log("remote",pubMessage);
-          PubSub.publish(CH, pubMessage);
-          break;
+      const {cursor,selection,id} = message;
+      if(messageTypes.includes(id)){
+        if(id == 'removeUser'){
+          removeUser(userName,db)
+        }else{
+          registerChange(id, userName,db, {cursor,selection});
         }
-        case 'cursorChange': {
-          db[userName] = cursor;
-          pubMessage = { id: 'cursorChange', userName, cursor };
-          pubMessage = JSON.stringify(pubMessage);
-          //console.log("remote",pubMessage);
-          PubSub.publish(CH, pubMessage);
-          break;
-        }
-        case 'removeUser': {
-          removeUser(userName,db);
-          break;
-        }
-        default:
+      }else{
           // console.warn(`unhandled message: ${message}`);
       }
     };
