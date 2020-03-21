@@ -1,14 +1,8 @@
 import {AceMultiCursorManager, AceMultiSelectionManager} from '@convergencelabs/ace-collab-ext'
 import {Range} from 'ace-builds'
-import * as stringToColor from 'string-to-color'
+const stringToColor = require('string-to-color')
 
-const colors = [
-  'BurlyWood', 'PowderBlue', 'Violet', 'GreenYellow',
-  'Red', 'LimeGreen', 'DarkViolet', 'GhostWhite',
-  'OrangeRed', 'HotPink'
-];
 const MAX_USERS = 50;
-
 
 export class SharedbAceMultipleCursorsClient {
 
@@ -77,7 +71,7 @@ export class SharedbAceMultipleCursorsClient {
           break;
         case 'removeUser':
           this.multiCursor.removeCursor(userName);
-          this.multiSelection.removeSelection(userName);
+          // this.multiSelection.removeSelection(userName);
           break;
       }
     };

@@ -1,5 +1,5 @@
 {
-  "name": "@elgiano/sharedb-ace-multiple-cursors",
+  "name": "sharedb-ace-collab",
   "version": "1.0.0",
   "description": "Display cursors of other users",
   "main": "dist/index.js",
@@ -10,7 +10,7 @@
     "build": "tsc",
     "prepare": "npm run build"
   },
-  "author": "",
+  "author": "elgiano",
   "license": "ISC",
   "dependencies": {
     "@types/pubsub-js": "^1.5.18",
